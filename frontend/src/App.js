@@ -1,24 +1,26 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { Container, Typography } from '@mui/material';
+import FileExplorer from './components/FileExplorer';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
 
 function App() {
+  const [files, setFiles] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/files')
+      .then(response => response.json())
+      .then(data => setFiles(data));
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Container>
+      <Typography variant="h4" gutterBottom>
+        MyOS MVP
+      </Typography>
+      <FileExplorer files={files} />
+    </Container>
   );
 }
 
