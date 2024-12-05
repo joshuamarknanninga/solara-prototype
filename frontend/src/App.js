@@ -1,54 +1,71 @@
-// src/App.js
-import React, { useEffect, useState } from 'react';
-import { Container, Typography } from '@mui/material';
-import FileExplorer from './components/FileExplorer';
-import io from 'socket.io-client';
+// frontend/src/App.js
 
-const socket = io('http://localhost:3001');
+import React, { useEffect, useState } from 'react';
+import { Container, Typography, Grid } from '@mui/material';
+import FileExplorer from './components/FileExplorer';
+import NetworkManager from './components/NetworkManager';
+import TaskManager from './components/TaskManager';
+import ProcessManager from './components/ProcessManager';
+import MemoryManager from './components/MemoryManager';
+import axios from 'axios'; // Ensure axios is imported for fetching data
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
 
 function App() {
   const [files, setFiles] = useState([]);
 
   useEffect(() => {
-    // Fetch files from backend API
-    fetch('http://localhost:3001/api/files')
-      .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Fetched data:', data);
-        setFiles(data);
-      })
-      .catch(error => console.error('Error fetching files:', error));
-  }, []);
+    fetchFiles();
 
-  useEffect(() => {
-    // Handle Socket.io connection events
-    socket.on('connect', () => {
-      console.log('Connected to backend via Socket.io');
+    // Listen for real-time process updates (if applicable)
+    socket.on('processCreated', (process) => {
+      console.log('Process Created:', process);
+      // Optionally, update state or perform actions
     });
 
-    socket.on('disconnect', () => {
-      console.log('Disconnected from backend');
+    socket.on('processTerminated', ({ pid }) => {
+      console.log('Process Terminated:', pid);
+      // Optionally, update state or perform actions
     });
 
-    // Cleanup on component unmount
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.off('processCreated');
+      socket.off('processTerminated');
     };
   }, []);
+
+  const fetchFiles = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/files');
+      setFiles(response.data);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+    }
+  };
 
   return (
     <Container>
       <Typography variant="h4" gutterBottom>
         SolaraOS MVP
       </Typography>
-      <FileExplorer files={files} />
+      <Grid container spacing={4}>
+        <Grid item xs={12} md={6}>
+          <FileExplorer files={files} />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <NetworkManager />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TaskManager />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <ProcessManager />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <MemoryManager />
+        </Grid>
+      </Grid>
     </Container>
   );
 }
